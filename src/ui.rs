@@ -38,6 +38,11 @@ pub fn render_ui(f: &mut Frame, app: &App) {
     if app.show_commit_dialog {
         render_commit_dialog(f, app);
     }
+
+    // Render branch creation dialog if active
+    if app.show_branch_dialog {
+        render_branch_dialog(f, app);
+    }
 }
 
 fn render_header(f: &mut Frame, app: &App, area: Rect) {
@@ -74,7 +79,7 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
             "↑/↓:Navigate | r:Refresh | q:Quit"
         }
         View::Branches => {
-            "↑/↓:Navigate | Enter:Checkout | r:Refresh | q:Quit"
+            "↑/↓:Navigate | n:New Branch | Enter:Checkout | r:Refresh | q:Quit"
         }
     };
 
@@ -114,6 +119,78 @@ fn render_commit_dialog(f: &mut Frame, app: &App) {
 
     f.render_widget(Clear, area);
     f.render_widget(text, area);
+}
+
+fn render_branch_dialog(f: &mut Frame, app: &App) {
+    let area = centered_rect(70, 60, f.area());
+
+    f.render_widget(Clear, area);
+
+    if app.branch_creation.selecting_base {
+        // Show base branch selection
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(0)])
+            .split(area);
+
+        let branches: Vec<ratatui::widgets::ListItem> = app
+            .branches_state
+            .branches
+            .iter()
+            .enumerate()
+            .map(|(i, branch)| {
+                let style = if i == app.branch_creation.base_branch_selected {
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::White)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+
+                let prefix = if branch.is_current { "* " } else { "  " };
+                let content = Line::from(vec![
+                    Span::raw(prefix),
+                    Span::raw(&branch.name),
+                ]);
+
+                ratatui::widgets::ListItem::new(content).style(style)
+            })
+            .collect();
+
+        let list = ratatui::widgets::List::new(branches).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Select Base Branch (Enter to confirm, Esc to cancel)")
+                .border_style(Style::default().fg(Color::Yellow)),
+        );
+
+        f.render_widget(list, chunks[0]);
+    } else {
+        // Show branch name input
+        let base_branch = app
+            .branches_state
+            .branches
+            .get(app.branch_creation.base_branch_selected)
+            .map(|b| b.name.as_str())
+            .unwrap_or(&app.branches_state.current_branch);
+
+        let title = format!(
+            "Create Branch from '{}' (Tab to change base, Enter to create, Esc to cancel)",
+            base_branch
+        );
+
+        let block = Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow));
+
+        let text = Paragraph::new(app.branch_creation.new_branch_name.as_str())
+            .block(block)
+            .style(Style::default().fg(Color::White));
+
+        f.render_widget(text, area);
+    }
 }
 
 fn get_view_style(app: &App, view: View) -> Style {

@@ -22,28 +22,28 @@ pub fn handle_mouse_event(app: &mut App, mouse: MouseEvent) -> Result<()> {
 }
 
 pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result<()> {
-    // Global key bindings
+    // Global key bindings (only when no dialog is open)
     match key.code {
-        KeyCode::Char('q') if !app.show_commit_dialog => {
+        KeyCode::Char('q') if !app.show_commit_dialog && !app.show_branch_dialog => {
             app.should_quit = true;
             return Ok(());
         }
-        KeyCode::Char('1') if !app.show_commit_dialog => {
+        KeyCode::Char('1') if !app.show_commit_dialog && !app.show_branch_dialog => {
             app.switch_view(View::Files);
             refresh_files(app, git_repo)?;
             return Ok(());
         }
-        KeyCode::Char('2') if !app.show_commit_dialog => {
+        KeyCode::Char('2') if !app.show_commit_dialog && !app.show_branch_dialog => {
             app.switch_view(View::History);
             refresh_history(app, git_repo)?;
             return Ok(());
         }
-        KeyCode::Char('3') if !app.show_commit_dialog => {
+        KeyCode::Char('3') if !app.show_commit_dialog && !app.show_branch_dialog => {
             app.switch_view(View::Branches);
             refresh_branches(app, git_repo)?;
             return Ok(());
         }
-        KeyCode::Char('r') if !app.show_commit_dialog => {
+        KeyCode::Char('r') if !app.show_commit_dialog && !app.show_branch_dialog => {
             refresh_current_view(app, git_repo)?;
             app.set_status("Refreshed".to_string());
             return Ok(());
@@ -80,6 +80,77 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
                 app.commit_message.pop();
             }
             _ => {}
+        }
+        return Ok(());
+    }
+
+    // Branch creation dialog handling
+    if app.show_branch_dialog {
+        if app.branch_creation.selecting_base {
+            // Selecting base branch
+            match key.code {
+                KeyCode::Esc => {
+                    app.show_branch_dialog = false;
+                    app.branch_creation.new_branch_name.clear();
+                    app.branch_creation.selecting_base = false;
+                }
+                KeyCode::Up | KeyCode::Char('k') => {
+                    if app.branch_creation.base_branch_selected > 0 {
+                        app.branch_creation.base_branch_selected -= 1;
+                    }
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    if !app.branches_state.branches.is_empty() {
+                        app.branch_creation.base_branch_selected = 
+                            (app.branch_creation.base_branch_selected + 1)
+                                .min(app.branches_state.branches.len() - 1);
+                    }
+                }
+                KeyCode::Enter => {
+                    // Confirm base branch selection, go back to name entry
+                    app.branch_creation.selecting_base = false;
+                }
+                _ => {}
+            }
+        } else {
+            // Entering branch name
+            match key.code {
+                KeyCode::Esc => {
+                    app.show_branch_dialog = false;
+                    app.branch_creation.new_branch_name.clear();
+                }
+                KeyCode::Enter => {
+                    if !app.branch_creation.new_branch_name.trim().is_empty() {
+                        let base_branch = &app.branches_state.branches
+                            .get(app.branch_creation.base_branch_selected)
+                            .map(|b| b.name.clone())
+                            .unwrap_or_else(|| app.branches_state.current_branch.clone());
+                        
+                        match git_repo.create_branch(&app.branch_creation.new_branch_name, base_branch) {
+                            Ok(_) => {
+                                app.set_status(format!("Created branch: {}", app.branch_creation.new_branch_name));
+                                app.branch_creation.new_branch_name.clear();
+                                app.show_branch_dialog = false;
+                                refresh_branches(app, git_repo)?;
+                            }
+                            Err(e) => {
+                                app.set_status(format!("Failed to create branch: {}", e));
+                            }
+                        }
+                    }
+                }
+                KeyCode::Char(c) => {
+                    app.branch_creation.new_branch_name.push(c);
+                }
+                KeyCode::Backspace => {
+                    app.branch_creation.new_branch_name.pop();
+                }
+                KeyCode::Tab => {
+                    // Switch to base branch selection
+                    app.branch_creation.selecting_base = true;
+                }
+                _ => {}
+            }
         }
         return Ok(());
     }
@@ -201,6 +272,16 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
 
 fn handle_branches_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result<()> {
     match key.code {
+        KeyCode::Char('n') => {
+            // Open branch creation dialog
+            app.show_branch_dialog = true;
+            app.branch_creation.new_branch_name.clear();
+            app.branch_creation.selecting_base = false;
+            // Set default base to current branch index
+            if let Some(pos) = app.branches_state.branches.iter().position(|b| b.is_current) {
+                app.branch_creation.base_branch_selected = pos;
+            }
+        }
         KeyCode::Enter | KeyCode::Char('o') => {
             // Checkout selected branch
             if let Some(branch) = app.branches_state.branches.get(app.branches_state.selected) {

@@ -18,6 +18,8 @@ pub struct App {
     pub status_message: Option<String>,
     pub show_commit_dialog: bool,
     pub commit_message: String,
+    pub show_branch_dialog: bool,
+    pub branch_creation: BranchCreation,
 }
 
 #[derive(Debug)]
@@ -55,6 +57,13 @@ pub struct BranchesState {
     pub current_branch: String,
 }
 
+#[derive(Debug)]
+pub struct BranchCreation {
+    pub new_branch_name: String,
+    pub base_branch_selected: usize,
+    pub selecting_base: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct BranchInfo {
     pub name: String,
@@ -67,6 +76,12 @@ impl App {
             current_view: View::Files,
             repo_path,
             should_quit: false,
+            show_branch_dialog: false,
+            branch_creation: BranchCreation {
+                new_branch_name: String::new(),
+                base_branch_selected: 0,
+                selecting_base: false,
+            },
             history_state: HistoryState {
                 selected: 0,
                 commits: Vec::new(),

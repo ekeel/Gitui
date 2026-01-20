@@ -215,6 +215,12 @@ impl GitRepo {
         Ok(())
     }
 
+    pub fn create_branch(&self, branch_name: &str, base_branch: &str) -> Result<()> {
+        let base_commit = self.repo.revparse_single(base_branch)?.peel_to_commit()?;
+        self.repo.branch(branch_name, &base_commit, false)?;
+        Ok(())
+    }
+
     pub fn checkout_branch(&self, branch_name: &str) -> Result<()> {
         let (object, reference) = self.repo.revparse_ext(branch_name)?;
 
