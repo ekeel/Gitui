@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-macos:
     name: Build macOS Binary
@@ -38,12 +41,19 @@ jobs:
                    --version 1.0.0 \
                    --install-location / \
                    gitui-macos.pkg
+          
+          # Also create a simple tarball for users who want to avoid Gatekeeper
+          cd target/release
+          tar -czf ../../gitui-macos.tar.gz gitui
+          cd ../..
       
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: gitui-macos
-          path: gitui-macos.pkg
+          path: |
+            gitui-macos.pkg
+            gitui-macos.tar.gz
   
   create-release:
     name: Create Release
@@ -64,7 +74,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./artifacts/gitui-macos.pkg
+          files: |
+            ./artifacts/gitui-macos.pkg
+            ./artifacts/gitui-macos.tar.gz
           body: |
             ## GitUI Release
             
@@ -74,9 +86,23 @@ jobs:
             
             **macOS (.pkg installer):**
             1. Download `gitui-macos.pkg`
-            2. Double-click to install (or run `sudo installer -pkg gitui-macos.pkg -target /`)
-            3. The binary will be installed to `/usr/local/bin/gitui`
-            4. Run `gitui` from any terminal
+            2. Right-click the file and select "Open" (or run `sudo installer -pkg gitui-macos.pkg -target /`)
+            3. Click "Open" when warned about unverified developer
+            4. The binary will be installed to `/usr/local/bin/gitui`
+            5. Run `gitui` from any terminal
+            
+            **Alternative (bypass Gatekeeper via command line):**
+            ```bash
+            xattr -d com.apple.quarantine gitui-macos.pkg
+            sudo installer -pkg gitui-macos.pkg -target /
+            ``macOS (binary only - no Gatekeeper issues):**
+            ```bash
+            tar -xzf gitui-macos.tar.gz
+            chmod +x gitui
+            sudo mv gitui /usr/local/bin/
+            ```
+            
+            **`
             
             **From source:**
             ```bash
@@ -85,4 +111,4 @@ jobs:
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
