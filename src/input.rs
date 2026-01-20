@@ -1,8 +1,25 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use anyhow::Result;
 
 use crate::app::{App, View};
 use crate::git::GitRepo;
+
+pub fn handle_mouse_event(app: &mut App, mouse: MouseEvent) -> Result<()> {
+    match mouse.kind {
+        MouseEventKind::ScrollDown => {
+            if app.current_view == View::Files {
+                app.scroll_diff_down();
+            }
+        }
+        MouseEventKind::ScrollUp => {
+            if app.current_view == View::Files {
+                app.scroll_diff_up();
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
 
 pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result<()> {
     // Global key bindings
@@ -72,13 +89,29 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
         KeyCode::Up | KeyCode::Char('k') => {
             app.previous_item();
             if app.current_view == View::Files && !app.files_state.files.is_empty() {
+                app.reset_diff_scroll();
                 update_file_diff(app, git_repo)?;
             }
         }
         KeyCode::Down | KeyCode::Char('j') => {
             app.next_item();
             if app.current_view == View::Files && !app.files_state.files.is_empty() {
+                app.reset_diff_scroll();
                 update_file_diff(app, git_repo)?;
+            }
+        }
+        KeyCode::PageUp => {
+            if app.current_view == View::Files {
+                for _ in 0..10 {
+                    app.scroll_diff_up();
+                }
+            }
+        }
+        KeyCode::PageDown => {
+            if app.current_view == View::Files {
+                for _ in 0..10 {
+                    app.scroll_diff_down();
+                }
             }
         }
         _ => {}

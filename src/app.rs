@@ -39,6 +39,7 @@ pub struct FilesState {
     pub selected: usize,
     pub files: Vec<FileStatus>,
     pub current_diff: Option<String>,
+    pub diff_scroll: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -74,6 +75,7 @@ impl App {
                 selected: 0,
                 files: Vec::new(),
                 current_diff: None,
+                diff_scroll: 0,
             },
             branches_state: BranchesState {
                 selected: 0,
@@ -135,5 +137,19 @@ impl App {
 
     pub fn set_status(&mut self, message: String) {
         self.status_message = Some(message);
+    }
+
+    pub fn scroll_diff_up(&mut self) {
+        if self.files_state.diff_scroll > 0 {
+            self.files_state.diff_scroll -= 1;
+        }
+    }
+
+    pub fn scroll_diff_down(&mut self) {
+        self.files_state.diff_scroll += 1;
+    }
+
+    pub fn reset_diff_scroll(&mut self) {
+        self.files_state.diff_scroll = 0;
     }
 }

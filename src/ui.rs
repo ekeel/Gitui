@@ -68,7 +68,7 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let help_text = match app.current_view {
         View::Files => {
-            "↑/↓:Navigate | s:Stage | a:Stage All | c:Commit | p:Pull | P:Push | S:Sync | r:Refresh | q:Quit"
+            "↑/↓:Navigate | PgUp/PgDn:Scroll | s:Stage | a:Stage All | c:Commit | p:Pull | P:Push | S:Sync | r:Refresh | q:Quit"
         }
         View::History => {
             "↑/↓:Navigate | r:Refresh | q:Quit"

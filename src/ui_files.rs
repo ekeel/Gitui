@@ -64,7 +64,7 @@ pub fn render_files(f: &mut Frame, app: &App, area: Rect) {
         .map(|s| s.as_str())
         .unwrap_or("Select a file to view diff");
 
-    let diff_lines: Vec<Line> = diff_text
+    let all_lines: Vec<Line> = diff_text
         .lines()
         .map(|line| {
             let style = if line.starts_with('+') {
@@ -81,11 +81,18 @@ pub fn render_files(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
-    let diff_paragraph = Paragraph::new(diff_lines)
+    // Apply scrolling offset
+    let scroll_offset = app.files_state.diff_scroll;
+    let visible_lines: Vec<Line> = all_lines
+        .into_iter()
+        .skip(scroll_offset)
+        .collect();
+
+    let diff_paragraph = Paragraph::new(visible_lines)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Diff")
+                .title(format!("Diff (scroll: {})", scroll_offset))
                 .border_style(Style::default().fg(Color::Cyan)),
         )
         .wrap(Wrap { trim: false });

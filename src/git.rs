@@ -105,7 +105,7 @@ impl GitRepo {
             let mut opts = StatusOptions::new();
             opts.pathspec(path);
             let statuses = self.repo.statuses(Some(&mut opts))?;
-            
+
             if let Some(entry) = statuses.get(0) {
                 if entry.status().contains(Status::WT_NEW) {
                     // For untracked files, show the content as all new lines

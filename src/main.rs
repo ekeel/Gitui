@@ -18,7 +18,7 @@ use std::time::Duration;
 
 use app::App;
 use git::GitRepo;
-use input::handle_key_event;
+use input::{handle_key_event, handle_mouse_event};
 use ui::render_ui;
 
 fn main() -> Result<()> {
@@ -30,7 +30,7 @@ fn main() -> Result<()> {
 
     // Open git repository
     let git_repo = GitRepo::open(&repo_path)?;
-
+    // Test comment
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -64,7 +64,7 @@ fn main() -> Result<()> {
 
     // Restore terminal - always do this
     restore_terminal();
-    
+
     // After restoring terminal, we can safely show errors
     if let Err(err) = result {
         eprintln!("Error: {:?}", err);
@@ -76,13 +76,9 @@ fn main() -> Result<()> {
 fn restore_terminal() {
     // Disable raw mode
     let _ = disable_raw_mode();
-    
+
     // Restore terminal state
-    let _ = execute!(
-        io::stdout(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    );
+    let _ = execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
 }
 
 fn run_app(
@@ -94,8 +90,14 @@ fn run_app(
         terminal.draw(|f| render_ui(f, app))?;
 
         if event::poll(Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                handle_key_event(app, key, git_repo)?;
+            match event::read()? {
+                Event::Key(key) => {
+                    handle_key_event(app, key, git_repo)?;
+                }
+                Event::Mouse(mouse) => {
+                    handle_mouse_event(app, mouse)?;
+                }
+                _ => {}
             }
         }
 
