@@ -61,6 +61,8 @@ cargo run /path/to/repo
 
 - `s` - Stage selected file
 - `a` - Stage all files
+- `d` - Discard changes selected file
+- 'D' - Discard changes all files
 - `c` - Open commit dialog
 - `p` - Pull from remote
 - `P` - Push to remote
@@ -149,9 +151,6 @@ The application displays:
 Potential features for future versions:
 
 - Unstage files
-- Discard changes
-- Create new branches
-- Delete branches
 - Amend commits
 - Stash operations
 - Remote management
