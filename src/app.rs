@@ -20,6 +20,9 @@ pub struct App {
     pub commit_message: String,
     pub show_branch_dialog: bool,
     pub branch_creation: BranchCreation,
+    pub show_delete_confirm: bool,
+    pub delete_confirmation: String,
+    pub branch_to_delete: Option<String>,
 }
 
 #[derive(Debug)]
@@ -77,6 +80,9 @@ impl App {
             repo_path,
             should_quit: false,
             show_branch_dialog: false,
+            show_delete_confirm: false,
+            delete_confirmation: String::new(),
+            branch_to_delete: None,
             branch_creation: BranchCreation {
                 new_branch_name: String::new(),
                 base_branch_selected: 0,

@@ -221,6 +221,14 @@ impl GitRepo {
         Ok(())
     }
 
+    pub fn delete_branch(&self, branch_name: &str) -> Result<()> {
+        let mut branch = self
+            .repo
+            .find_branch(branch_name, git2::BranchType::Local)?;
+        branch.delete()?;
+        Ok(())
+    }
+
     pub fn checkout_branch(&self, branch_name: &str) -> Result<()> {
         let (object, reference) = self.repo.revparse_ext(branch_name)?;
 
@@ -359,6 +367,88 @@ impl GitRepo {
                     }
 
                     if !username.is_empty() && !password.is_empty() {
+                        return git2::Cred::userpass_plaintext(&username, &password);
+                    }
+                }
+            }
+
+            // For SSH
+            if url.starts_with("git@")
+                || url.starts_with("ssh://")
+                || allowed_types.contains(git2::CredentialType::SSH_KEY)
+            {
+                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+                {
+                    return Ok(cred);
+                }
+            }
+
+            // Try default
+            if allowed_types.contains(git2::CredentialType::DEFAULT) {
+                return git2::Cred::default();
+            }
+
+            Err(git2::Error::from_str("No valid credentials found"))
+        });
+
+        let mut push_options = git2::PushOptions::new();
+        push_options.remote_callbacks(callbacks);
+
+        remote.push(&[&refspec], Some(&mut push_options))?;
+        Ok(())
+    }
+
+    pub fn push_branch(&self, branch_name: &str) -> Result<()> {
+        let mut remote = self.repo.find_remote("origin")?;
+        let refspec = format!("refs/heads/{}:refs/heads/{}", branch_name, branch_name);
+
+        // Set up authentication callbacks
+        let mut callbacks = git2::RemoteCallbacks::new();
+        callbacks.credentials(|url, username_from_url, allowed_types| {
+            // For HTTPS, use git credential fill
+            if url.starts_with("https://")
+                && allowed_types.contains(git2::CredentialType::USER_PASS_PLAINTEXT)
+            {
+                // Call git credential fill
+                use std::io::Write;
+                use std::process::{Command, Stdio};
+
+                let mut child = Command::new("git")
+                    .arg("credential")
+                    .arg("fill")
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::inherit())
+                    .spawn()
+                    .map_err(|e| {
+                        git2::Error::from_str(&format!("Failed to spawn git credential: {}", e))
+                    })?;
+
+                // Write the credential request
+                if let Some(stdin) = child.stdin.as_mut() {
+                    let _ = writeln!(stdin, "protocol=https");
+                    let _ = writeln!(stdin, "host=github.com");
+                    if let Some(username) = username_from_url {
+                        let _ = writeln!(stdin, "username={}", username);
+                    }
+                    let _ = writeln!(stdin);
+                }
+
+                // Read the response
+                if let Ok(output) = child.wait_with_output() {
+                    if output.status.success() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        let mut username = String::new();
+                        let mut password = String::new();
+
+                        for line in stdout.lines() {
+                            if let Some(value) = line.strip_prefix("username=") {
+                                username = value.to_string();
+                            } else if let Some(value) = line.strip_prefix("password=") {
+                                password = value.to_string();
+                            }
+                        }
+
                         return git2::Cred::userpass_plaintext(&username, &password);
                     }
                 }

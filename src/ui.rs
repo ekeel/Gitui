@@ -43,6 +43,11 @@ pub fn render_ui(f: &mut Frame, app: &App) {
     if app.show_branch_dialog {
         render_branch_dialog(f, app);
     }
+
+    // Render delete confirmation dialog if active
+    if app.show_delete_confirm {
+        render_delete_confirm_dialog(f, app);
+    }
 }
 
 fn render_header(f: &mut Frame, app: &App, area: Rect) {
@@ -84,7 +89,7 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
             "↑/↓:Navigate | r:Refresh | q:Quit"
         }
         View::Branches => {
-            "↑/↓:Navigate | n:New Branch | Enter:Checkout | r:Refresh | q:Quit"
+            "↑/↓:Navigate | n:New Branch | d:Delete | Enter:Checkout | r:Refresh | q:Quit"
         }
     };
 
@@ -205,6 +210,33 @@ fn get_view_style(app: &App, view: View) -> Style {
     } else {
         Style::default().fg(Color::Gray)
     }
+}
+
+fn render_delete_confirm_dialog(f: &mut Frame, app: &App) {
+    let area = centered_rect(60, 30, f.area());
+
+    let default_name = String::from("unknown");
+    let branch_name = app.branch_to_delete.as_ref().unwrap_or(&default_name);
+    let title = format!("Delete branch '{}'", branch_name);
+    let instruction = "Type 'yes' or 'y' to confirm (Enter to submit, Esc to cancel)";
+
+    let block = Block::default()
+        .title(title)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Red));
+
+    let text = vec![
+        Line::from(instruction),
+        Line::from(""),
+        Line::from(app.delete_confirmation.as_str()),
+    ];
+
+    let paragraph = Paragraph::new(text)
+        .block(block)
+        .style(Style::default().fg(Color::White));
+
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {

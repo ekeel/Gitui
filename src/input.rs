@@ -25,26 +25,36 @@ pub fn handle_mouse_event(app: &mut App, mouse: MouseEvent) -> Result<()> {
 pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result<()> {
     // Global key bindings (only when no dialog is open)
     match key.code {
-        KeyCode::Char('q') if !app.show_commit_dialog && !app.show_branch_dialog => {
+        KeyCode::Char('q')
+            if !app.show_commit_dialog && !app.show_branch_dialog && !app.show_delete_confirm =>
+        {
             app.should_quit = true;
             return Ok(());
         }
-        KeyCode::Char('1') if !app.show_commit_dialog && !app.show_branch_dialog => {
+        KeyCode::Char('1')
+            if !app.show_commit_dialog && !app.show_branch_dialog && !app.show_delete_confirm =>
+        {
             app.switch_view(View::Files);
             refresh_files(app, git_repo)?;
             return Ok(());
         }
-        KeyCode::Char('2') if !app.show_commit_dialog && !app.show_branch_dialog => {
+        KeyCode::Char('2')
+            if !app.show_commit_dialog && !app.show_branch_dialog && !app.show_delete_confirm =>
+        {
             app.switch_view(View::History);
             refresh_history(app, git_repo)?;
             return Ok(());
         }
-        KeyCode::Char('3') if !app.show_commit_dialog && !app.show_branch_dialog => {
+        KeyCode::Char('3')
+            if !app.show_commit_dialog && !app.show_branch_dialog && !app.show_delete_confirm =>
+        {
             app.switch_view(View::Branches);
             refresh_branches(app, git_repo)?;
             return Ok(());
         }
-        KeyCode::Char('r') if !app.show_commit_dialog && !app.show_branch_dialog => {
+        KeyCode::Char('r')
+            if !app.show_commit_dialog && !app.show_branch_dialog && !app.show_delete_confirm =>
+        {
             refresh_current_view(app, git_repo)?;
             app.set_status("Refreshed".to_string());
             return Ok(());
@@ -129,14 +139,29 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
                             .map(|b| b.name.clone())
                             .unwrap_or_else(|| app.branches_state.current_branch.clone());
 
-                        match git_repo
-                            .create_branch(&app.branch_creation.new_branch_name, base_branch)
-                        {
+                        let branch_name = app.branch_creation.new_branch_name.clone();
+                        match git_repo.create_branch(&branch_name, base_branch) {
                             Ok(_) => {
-                                app.set_status(format!(
-                                    "Created branch: {}",
-                                    app.branch_creation.new_branch_name
-                                ));
+                                // Push the new branch to remote
+                                app.set_status(format!("Pushing branch to remote..."));
+                                let _ = disable_raw_mode();
+                                let push_result = git_repo.push_branch(&branch_name);
+                                let _ = enable_raw_mode();
+
+                                match push_result {
+                                    Ok(_) => {
+                                        app.set_status(format!(
+                                            "Created and pushed branch: {}",
+                                            branch_name
+                                        ));
+                                    }
+                                    Err(e) => {
+                                        app.set_status(format!(
+                                            "Created branch locally but failed to push: {}",
+                                            e
+                                        ));
+                                    }
+                                }
                                 app.branch_creation.new_branch_name.clear();
                                 app.show_branch_dialog = false;
                                 refresh_branches(app, git_repo)?;
@@ -159,6 +184,49 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
                 }
                 _ => {}
             }
+        }
+        return Ok(());
+    }
+
+    // Delete confirmation dialog handling
+    if app.show_delete_confirm {
+        match key.code {
+            KeyCode::Esc => {
+                app.show_delete_confirm = false;
+                app.delete_confirmation.clear();
+                app.branch_to_delete = None;
+            }
+            KeyCode::Enter => {
+                let confirmation = app.delete_confirmation.trim().to_lowercase();
+                if confirmation == "y" || confirmation == "yes" {
+                    if let Some(branch_name) = &app.branch_to_delete {
+                        match git_repo.delete_branch(branch_name) {
+                            Ok(_) => {
+                                app.set_status(format!("Deleted branch: {}", branch_name));
+                                app.show_delete_confirm = false;
+                                app.delete_confirmation.clear();
+                                app.branch_to_delete = None;
+                                refresh_branches(app, git_repo)?;
+                            }
+                            Err(e) => {
+                                app.set_status(format!("Failed to delete branch: {}", e));
+                            }
+                        }
+                    }
+                } else {
+                    app.set_status("Delete cancelled".to_string());
+                    app.show_delete_confirm = false;
+                    app.delete_confirmation.clear();
+                    app.branch_to_delete = None;
+                }
+            }
+            KeyCode::Char(c) => {
+                app.delete_confirmation.push(c);
+            }
+            KeyCode::Backspace => {
+                app.delete_confirmation.pop();
+            }
+            _ => {}
         }
         return Ok(());
     }
@@ -305,6 +373,18 @@ fn handle_branches_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
                 .position(|b| b.is_current)
             {
                 app.branch_creation.base_branch_selected = pos;
+            }
+        }
+        KeyCode::Char('d') => {
+            // Open delete confirmation dialog
+            if let Some(branch) = app.branches_state.branches.get(app.branches_state.selected) {
+                if !branch.is_current {
+                    app.show_delete_confirm = true;
+                    app.branch_to_delete = Some(branch.name.clone());
+                    app.delete_confirmation.clear();
+                } else {
+                    app.set_status("Cannot delete the current branch".to_string());
+                }
             }
         }
         KeyCode::Enter | KeyCode::Char('o') => {
