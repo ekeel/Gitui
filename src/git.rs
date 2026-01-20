@@ -237,7 +237,17 @@ impl GitRepo {
     pub fn pull(&self) -> Result<()> {
         // Simplified pull - fetch and fast-forward merge
         let mut remote = self.repo.find_remote("origin")?;
-        remote.fetch(&["HEAD"], None, None)?;
+        
+        // Set up authentication callbacks
+        let mut callbacks = git2::RemoteCallbacks::new();
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        });
+
+        let mut fetch_options = git2::FetchOptions::new();
+        fetch_options.remote_callbacks(callbacks);
+        
+        remote.fetch(&["HEAD"], Some(&mut fetch_options), None)?;
 
         let fetch_head = self.repo.find_reference("FETCH_HEAD")?;
         let fetch_commit = self.repo.reference_to_annotated_commit(&fetch_head)?;
@@ -260,7 +270,17 @@ impl GitRepo {
         let mut remote = self.repo.find_remote("origin")?;
         let branch = self.get_current_branch()?;
         let refspec = format!("refs/heads/{}", branch);
-        remote.push(&[&refspec], None)?;
+        
+        // Set up authentication callbacks
+        let mut callbacks = git2::RemoteCallbacks::new();
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        });
+
+        let mut push_options = git2::PushOptions::new();
+        push_options.remote_callbacks(callbacks);
+        
+        remote.push(&[&refspec], Some(&mut push_options))?;
         Ok(())
     }
 
