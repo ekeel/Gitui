@@ -25,7 +25,10 @@ pub fn render_history(f: &mut Frame, app: &App, area: Rect) {
             };
 
             let content = vec![Line::from(vec![
-                Span::styled(format!("{} ", commit.id), Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    format!("{} ", commit.id),
+                    Style::default().fg(Color::Yellow),
+                ),
                 Span::raw(format!("{} ", commit.date)),
                 Span::styled(commit.author.clone(), Style::default().fg(Color::Green)),
                 Span::raw(format!(" - {}", commit.message)),
@@ -35,13 +38,12 @@ pub fn render_history(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
-    let commits_list = List::new(commits)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("Commit History")
-                .border_style(Style::default().fg(Color::Cyan)),
-        );
+    let commits_list = List::new(commits).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Commit History")
+            .border_style(Style::default().fg(Color::Cyan)),
+    );
 
     f.render_widget(commits_list, area);
 }
