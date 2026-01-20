@@ -231,6 +231,65 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
         return Ok(());
     }
 
+    // Discard confirmation dialog handling
+    if app.show_discard_confirm {
+        match key.code {
+            KeyCode::Esc => {
+                app.show_discard_confirm = false;
+                app.discard_confirmation.clear();
+                app.file_to_discard = None;
+                app.discard_all = false;
+            }
+            KeyCode::Enter => {
+                let confirmation = app.discard_confirmation.trim().to_lowercase();
+                if confirmation == "y" || confirmation == "yes" {
+                    if app.discard_all {
+                        match git_repo.discard_all() {
+                            Ok(_) => {
+                                app.set_status("Discarded all changes".to_string());
+                                app.show_discard_confirm = false;
+                                app.discard_confirmation.clear();
+                                app.file_to_discard = None;
+                                app.discard_all = false;
+                                refresh_files(app, git_repo)?;
+                            }
+                            Err(e) => {
+                                app.set_status(format!("Failed to discard changes: {}", e));
+                            }
+                        }
+                    } else if let Some(file_path) = &app.file_to_discard {
+                        match git_repo.discard_file(file_path) {
+                            Ok(_) => {
+                                app.set_status(format!("Discarded changes to: {}", file_path));
+                                app.show_discard_confirm = false;
+                                app.discard_confirmation.clear();
+                                app.file_to_discard = None;
+                                refresh_files(app, git_repo)?;
+                            }
+                            Err(e) => {
+                                app.set_status(format!("Failed to discard changes: {}", e));
+                            }
+                        }
+                    }
+                } else {
+                    app.set_status("Discard cancelled".to_string());
+                    app.show_discard_confirm = false;
+                    app.discard_confirmation.clear();
+                    app.file_to_discard = None;
+                    app.discard_all = false;
+                }
+            }
+            KeyCode::Char(c) => {
+                app.discard_confirmation.push(c);
+            }
+            KeyCode::Backspace => {
+                app.discard_confirmation.pop();
+            }
+            _ => {}
+        }
+        return Ok(());
+    }
+
     // Navigation
     match key.code {
         KeyCode::Up | KeyCode::Char('k') => {
@@ -347,6 +406,24 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
                     refresh_current_view(app, git_repo)?;
                 }
                 Err(e) => app.set_status(format!("Sync failed: {}", e)),
+            }
+        }
+        KeyCode::Char('d') => {
+            // Discard changes to selected file
+            if let Some(file) = app.files_state.files.get(app.files_state.selected) {
+                app.show_discard_confirm = true;
+                app.file_to_discard = Some(file.path.clone());
+                app.discard_all = false;
+                app.discard_confirmation.clear();
+            }
+        }
+        KeyCode::Char('D') => {
+            // Discard all changes
+            if !app.files_state.files.is_empty() {
+                app.show_discard_confirm = true;
+                app.file_to_discard = None;
+                app.discard_all = true;
+                app.discard_confirmation.clear();
             }
         }
         KeyCode::Enter => {

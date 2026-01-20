@@ -48,6 +48,11 @@ pub fn render_ui(f: &mut Frame, app: &App) {
     if app.show_delete_confirm {
         render_delete_confirm_dialog(f, app);
     }
+
+    // Render discard confirmation dialog if active
+    if app.show_discard_confirm {
+        render_discard_confirm_dialog(f, app);
+    }
 }
 
 fn render_header(f: &mut Frame, app: &App, area: Rect) {
@@ -83,7 +88,7 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let help_text = match app.current_view {
         View::Files => {
-            "↑/↓:Navigate | PgUp/PgDn:Scroll | s:Stage | a:Stage All | c:Commit | p:Pull | P:Push | S:Sync | r:Refresh | q:Quit"
+            "↑/↓:Navigate | PgUp/PgDn:Scroll | s:Stage | a:Stage All | d:Discard | D:Discard All | c:Commit | p:Pull | P:Push | S:Sync | r:Refresh | q:Quit"
         }
         View::History => {
             "↑/↓:Navigate | r:Refresh | q:Quit"
@@ -229,6 +234,45 @@ fn render_delete_confirm_dialog(f: &mut Frame, app: &App) {
         Line::from(instruction),
         Line::from(""),
         Line::from(app.delete_confirmation.as_str()),
+    ];
+
+    let paragraph = Paragraph::new(text)
+        .block(block)
+        .style(Style::default().fg(Color::White));
+
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}
+
+fn render_discard_confirm_dialog(f: &mut Frame, app: &App) {
+    let area = centered_rect(60, 30, f.area());
+
+    let title = if app.discard_all {
+        "Discard ALL changes".to_string()
+    } else {
+        let default_name = String::from("unknown");
+        let file_name = app.file_to_discard.as_ref().unwrap_or(&default_name);
+        format!("Discard changes to '{}'", file_name)
+    };
+    
+    let warning = if app.discard_all {
+        "WARNING: This will discard ALL uncommitted changes and delete untracked files!"
+    } else {
+        "WARNING: This will permanently discard all uncommitted changes to this file!"
+    };
+    let instruction = "Type 'yes' or 'y' to confirm (Enter to submit, Esc to cancel)";
+
+    let block = Block::default()
+        .title(title)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Red));
+
+    let text = vec![
+        Line::from(Span::styled(warning, Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))),
+        Line::from(""),
+        Line::from(instruction),
+        Line::from(""),
+        Line::from(app.discard_confirmation.as_str()),
     ];
 
     let paragraph = Paragraph::new(text)

@@ -23,6 +23,10 @@ pub struct App {
     pub show_delete_confirm: bool,
     pub delete_confirmation: String,
     pub branch_to_delete: Option<String>,
+    pub show_discard_confirm: bool,
+    pub discard_confirmation: String,
+    pub file_to_discard: Option<String>,
+    pub discard_all: bool,
 }
 
 #[derive(Debug)]
@@ -83,6 +87,10 @@ impl App {
             show_delete_confirm: false,
             delete_confirmation: String::new(),
             branch_to_delete: None,
+            show_discard_confirm: false,
+            discard_confirmation: String::new(),
+            file_to_discard: None,
+            discard_all: false,
             branch_creation: BranchCreation {
                 new_branch_name: String::new(),
                 base_branch_selected: 0,
