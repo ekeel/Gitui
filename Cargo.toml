@@ -7,7 +7,7 @@ chrono = "0.4"
 
 [package]
 name = "gituie"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Eric Keeling <eric@ekeel.net>"]
 license = "MIT"
@@ -16,3 +16,7 @@ repository = "https://github.com/ekeel/Gitui"
 readme = "README.md"
 keywords = ["git", "tui", "terminal"]
 categories = ["command-line-utilities"]
+
+[[bin]]
+name = "gtek"
+path = "src/main.rs"
