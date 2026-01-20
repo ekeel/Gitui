@@ -7,7 +7,7 @@ chrono = "0.4"
 
 [package]
 name = "gituie"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Eric Keeling <eric@ekeel.net>"]
 license = "MIT"
