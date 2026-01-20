@@ -245,7 +245,7 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
             let _ = disable_raw_mode();
             let result = git_repo.push();
             let _ = enable_raw_mode();
-            
+
             match result {
                 Ok(_) => app.set_status("Pushed successfully".to_string()),
                 Err(e) => app.set_status(format!("Push failed: {}", e)),
@@ -257,7 +257,7 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
             let _ = disable_raw_mode();
             let result = git_repo.pull();
             let _ = enable_raw_mode();
-            
+
             match result {
                 Ok(_) => {
                     app.set_status("Pulled successfully".to_string());
@@ -272,7 +272,7 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
             let _ = disable_raw_mode();
             let result = git_repo.sync();
             let _ = enable_raw_mode();
-            
+
             match result {
                 Ok(_) => {
                     app.set_status("Synced successfully".to_string());

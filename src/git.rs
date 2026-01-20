@@ -248,10 +248,11 @@ impl GitRepo {
                     return Ok(cred);
                 }
             }
-            
+
             // For SSH, try SSH agent
             if url.starts_with("git@") || url.starts_with("ssh://") {
-                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git")) {
+                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+                {
                     return Ok(cred);
                 }
             }
@@ -265,7 +266,8 @@ impl GitRepo {
 
             // Try SSH key if allowed
             if allowed_types.contains(git2::CredentialType::SSH_KEY) {
-                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git")) {
+                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+                {
                     return Ok(cred);
                 }
             }
@@ -311,11 +313,13 @@ impl GitRepo {
         let mut callbacks = git2::RemoteCallbacks::new();
         callbacks.credentials(|url, username_from_url, allowed_types| {
             // For HTTPS, use git credential fill
-            if url.starts_with("https://") && allowed_types.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
+            if url.starts_with("https://")
+                && allowed_types.contains(git2::CredentialType::USER_PASS_PLAINTEXT)
+            {
                 // Call git credential fill
                 use std::io::Write;
                 use std::process::{Command, Stdio};
-                
+
                 let mut child = Command::new("git")
                     .arg("credential")
                     .arg("fill")
@@ -323,8 +327,10 @@ impl GitRepo {
                     .stdout(Stdio::piped())
                     .stderr(Stdio::inherit())
                     .spawn()
-                    .map_err(|e| git2::Error::from_str(&format!("Failed to spawn git credential: {}", e)))?;
-                
+                    .map_err(|e| {
+                        git2::Error::from_str(&format!("Failed to spawn git credential: {}", e))
+                    })?;
+
                 // Write the credential request
                 if let Some(stdin) = child.stdin.as_mut() {
                     let _ = writeln!(stdin, "protocol=https");
@@ -334,15 +340,16 @@ impl GitRepo {
                     }
                     let _ = writeln!(stdin);
                 }
-                
-                let output = child.wait_with_output()
-                    .map_err(|e| git2::Error::from_str(&format!("Failed to get git credential output: {}", e)))?;
-                
+
+                let output = child.wait_with_output().map_err(|e| {
+                    git2::Error::from_str(&format!("Failed to get git credential output: {}", e))
+                })?;
+
                 if output.status.success() {
                     let stdout = String::from_utf8_lossy(&output.stdout);
                     let mut username = String::new();
                     let mut password = String::new();
-                    
+
                     for line in stdout.lines() {
                         if let Some(user) = line.strip_prefix("username=") {
                             username = user.to_string();
@@ -350,16 +357,20 @@ impl GitRepo {
                             password = pass.to_string();
                         }
                     }
-                    
+
                     if !username.is_empty() && !password.is_empty() {
                         return git2::Cred::userpass_plaintext(&username, &password);
                     }
                 }
             }
-            
+
             // For SSH
-            if url.starts_with("git@") || url.starts_with("ssh://") || allowed_types.contains(git2::CredentialType::SSH_KEY) {
-                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git")) {
+            if url.starts_with("git@")
+                || url.starts_with("ssh://")
+                || allowed_types.contains(git2::CredentialType::SSH_KEY)
+            {
+                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+                {
                     return Ok(cred);
                 }
             }
@@ -374,7 +385,7 @@ impl GitRepo {
 
         let mut push_options = git2::PushOptions::new();
         push_options.remote_callbacks(callbacks);
-        
+
         remote.push(&[&refspec], Some(&mut push_options))?;
         Ok(())
     }
