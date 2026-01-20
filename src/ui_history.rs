@@ -24,15 +24,49 @@ pub fn render_history(f: &mut Frame, app: &App, area: Rect) {
                 Style::default().fg(Color::White)
             };
 
-            let content = vec![Line::from(vec![
-                Span::styled(
-                    format!("{} ", commit.id),
-                    Style::default().fg(Color::Yellow),
-                ),
-                Span::raw(format!("{} ", commit.date)),
-                Span::styled(commit.author.clone(), Style::default().fg(Color::Green)),
-                Span::raw(format!(" - {}", commit.message)),
-            ])];
+            let mut spans = vec![];
+
+            // Add graph visualization
+            if let Some(ref graph_info) = commit.graph_info {
+                if !graph_info.graph_line.trim().is_empty() {
+                    spans.push(Span::styled(
+                        format!("{}│ ", graph_info.graph_line),
+                        Style::default()
+                            .fg(Color::Magenta)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    // Fallback if graph is empty
+                    spans.push(Span::styled(
+                        "● │ ",
+                        Style::default()
+                            .fg(Color::Magenta)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+                }
+            } else {
+                // No graph info, show basic marker
+                spans.push(Span::styled(
+                    "● │ ",
+                    Style::default()
+                        .fg(Color::Magenta)
+                        .add_modifier(Modifier::BOLD),
+                ));
+            }
+
+            // Add commit info
+            spans.push(Span::styled(
+                format!("{} ", commit.id),
+                Style::default().fg(Color::Yellow),
+            ));
+            spans.push(Span::raw(format!("{} ", commit.date)));
+            spans.push(Span::styled(
+                commit.author.clone(),
+                Style::default().fg(Color::Green),
+            ));
+            spans.push(Span::raw(format!(" - {}", commit.message)));
+
+            let content = vec![Line::from(spans)];
 
             ListItem::new(content).style(style)
         })

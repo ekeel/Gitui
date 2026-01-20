@@ -26,24 +26,52 @@ A Terminal User Interface (TUI) for Git written in Rust, providing an intuitive 
 
 ## Installation
 
+### Install from crates.io
+
 ```bash
-cargo build --release
+cargo install gituie
 ```
 
-The binary will be available at `target/release/gitui`
+### Manual Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone <repository-url>
+   cd RustTest
+   ```
+
+2. Build from source:
+
+   ```bash
+   cargo build --release
+   ```
+
+3. The binary will be available at `target/release/gtek`
+
+4. (Optional) Add to PATH or copy to a directory in your PATH:
+   ```bash
+   cp target/release/gtek /usr/local/bin/
+   ```
 
 ## Usage
 
 Run from any directory within a Git repository:
 
 ```bash
-cargo run
+gtek
 ```
 
 Or specify a repository path:
 
 ```bash
-cargo run /path/to/repo
+gtek /path/to/repo
+```
+
+If running from source:
+
+```bash
+cargo run
 ```
 
 ## Keyboard Shortcuts

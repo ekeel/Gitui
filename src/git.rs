@@ -51,6 +51,9 @@ impl GitRepo {
                 .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
                 .unwrap_or_default();
 
+            let parent_ids: Vec<String> =
+                commit.parent_ids().map(|id| format!("{:.7}", id)).collect();
+
             commits.push(CommitInfo {
                 id: format!("{:.7}", oid),
                 author: author.name().unwrap_or("Unknown").to_string(),
@@ -62,10 +65,107 @@ impl GitRepo {
                     .next()
                     .unwrap_or("")
                     .to_string(),
+                parent_ids,
+                graph_info: None,
             });
         }
 
+        // Generate graph visualization
+        self.generate_commit_graph(&mut commits);
+
         Ok(commits)
+    }
+
+    fn generate_commit_graph(&self, commits: &mut Vec<CommitInfo>) {
+        use crate::app::GraphInfo;
+        use std::collections::HashMap;
+
+        let mut commit_columns: HashMap<String, usize> = HashMap::new();
+        let mut active_lanes: Vec<Option<String>> = Vec::new();
+
+        for commit in commits.iter_mut() {
+            // Find or assign a column for this commit
+            let column = if let Some(&col) = commit_columns.get(&commit.id) {
+                col
+            } else {
+                // Find first available lane or create a new one
+                let col = active_lanes
+                    .iter()
+                    .position(|lane| lane.is_none())
+                    .unwrap_or_else(|| {
+                        active_lanes.push(None);
+                        active_lanes.len() - 1
+                    });
+                commit_columns.insert(commit.id.clone(), col);
+                col
+            };
+
+            // Ensure active_lanes is large enough
+            if column >= active_lanes.len() {
+                active_lanes.resize(column + 1, None);
+            }
+
+            // Build graph line with enough space for all lanes
+            let max_lanes = active_lanes.len().max(column + 1);
+            let mut graph = vec![' '; max_lanes * 2];
+
+            // Draw all active branches
+            for (i, lane) in active_lanes.iter().enumerate() {
+                if i * 2 >= graph.len() {
+                    break;
+                }
+                if i < column {
+                    if lane.is_some() {
+                        graph[i * 2] = '│';
+                    }
+                } else if i == column {
+                    graph[i * 2] = if commit.parent_ids.len() > 1 {
+                        '┬'
+                    } else {
+                        '●'
+                    };
+                } else if lane.is_some() {
+                    graph[i * 2] = '│';
+                }
+            }
+
+            // Update current lane
+            active_lanes[column] = Some(commit.id.clone());
+
+            // Process parent commits
+            let parents = commit.parent_ids.clone();
+            if !parents.is_empty() {
+                // First parent continues in same lane
+                active_lanes[column] = Some(parents[0].clone());
+                commit_columns.insert(parents[0].clone(), column);
+
+                // Additional parents (merges) get new lanes
+                for parent_id in parents.iter().skip(1) {
+                    if !commit_columns.contains_key(parent_id) {
+                        let new_col = active_lanes
+                            .iter()
+                            .position(|lane| lane.is_none())
+                            .unwrap_or_else(|| {
+                                active_lanes.push(None);
+                                active_lanes.len() - 1
+                            });
+                        if new_col >= active_lanes.len() {
+                            active_lanes.resize(new_col + 1, None);
+                        }
+                        active_lanes[new_col] = Some(parent_id.clone());
+                        commit_columns.insert(parent_id.clone(), new_col);
+                    }
+                }
+            } else {
+                // No parents (initial commit), clear this lane
+                active_lanes[column] = None;
+            }
+
+            commit.graph_info = Some(GraphInfo {
+                column,
+                graph_line: graph.iter().collect(),
+            });
+        }
     }
 
     pub fn get_status(&self) -> Result<Vec<FileStatus>> {
