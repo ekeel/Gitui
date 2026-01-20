@@ -10,6 +10,7 @@ pub enum View {
 #[derive(Debug)]
 pub struct App {
     pub current_view: View,
+    #[allow(dead_code)]
     pub repo_path: PathBuf,
     pub should_quit: bool,
     pub history_state: HistoryState,

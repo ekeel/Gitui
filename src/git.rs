@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
-use git2::{Branch, BranchType, Commit, Delta, DiffOptions, Repository, Status, StatusOptions};
+use anyhow::Result;
+use git2::{BranchType, DiffOptions, Repository, Status, StatusOptions};
 use std::path::Path;
 
 use crate::app::{BranchInfo, CommitInfo, FileStatus};
