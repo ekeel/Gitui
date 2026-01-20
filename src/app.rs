@@ -42,6 +42,15 @@ pub struct CommitInfo {
     pub author: String,
     pub date: String,
     pub message: String,
+    pub parent_ids: Vec<String>,
+    pub graph_info: Option<GraphInfo>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GraphInfo {
+    #[allow(dead_code)]
+    pub column: usize,
+    pub graph_line: String,
 }
 
 #[derive(Debug)]
