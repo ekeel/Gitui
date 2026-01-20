@@ -49,6 +49,7 @@ cargo run /path/to/repo
 ## Keyboard Shortcuts
 
 ### Global
+
 - `1` - Switch to Files view
 - `2` - Switch to History view
 - `3` - Switch to Branches view
@@ -57,6 +58,7 @@ cargo run /path/to/repo
 - `q` - Quit application
 
 ### Files View
+
 - `s` - Stage selected file
 - `a` - Stage all files
 - `c` - Open commit dialog
@@ -66,9 +68,11 @@ cargo run /path/to/repo
 - `Enter` - Refresh diff for selected file
 
 ### Branches View
+
 - `Enter` or `o` - Checkout selected branch
 
 ### Commit Dialog
+
 - Type to enter commit message
 - `Enter` - Commit with message
 - `Esc` - Cancel commit
@@ -99,11 +103,13 @@ src/
 ## UI Layout
 
 The application displays:
+
 - **Header**: Shows application name, current branch, and view switcher
 - **Main Content**: Dynamic content based on selected view
 - **Footer**: Context-sensitive help and status messages
 
 ### Files View Layout
+
 ```
 ┌─────────────────────────────────────────────────┐
 │ Files (40%)        │ Diff Preview (60%)        │
@@ -116,6 +122,7 @@ The application displays:
 ## Status Indicators
 
 ### File Status
+
 - `A ` - Added (staged)
 - `M ` - Modified (staged)
 - `D ` - Deleted (staged)
@@ -124,6 +131,7 @@ The application displays:
 - `??` - Untracked
 
 ### Diff Colors
+
 - Green: Added lines (+)
 - Red: Removed lines (-)
 - Cyan: Hunk headers (@@)
@@ -139,6 +147,7 @@ The application displays:
 ## Future Enhancements
 
 Potential features for future versions:
+
 - Unstage files
 - Discard changes
 - Create new branches
