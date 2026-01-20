@@ -40,7 +40,32 @@ impl GitRepo {
     pub fn get_commits(&self, limit: usize) -> Result<Vec<CommitInfo>> {
         let mut commits = Vec::new();
         let mut revwalk = self.repo.revwalk()?;
+
+        // Build map of commit OID to branch names
+        use std::collections::HashMap;
+        let mut commit_branches: HashMap<String, Vec<String>> = HashMap::new();
+
+        // Push all local branches to show complete history
         revwalk.push_head()?;
+        let branches = self.repo.branches(Some(BranchType::Local))?;
+        for branch in branches {
+            if let Ok((branch, _)) = branch {
+                if let Some(oid) = branch.get().target() {
+                    let _ = revwalk.push(oid);
+
+                    // Record which branch points to this commit
+                    if let Some(name) = branch.name()? {
+                        let oid_str = format!("{:.7}", oid);
+                        commit_branches
+                            .entry(oid_str)
+                            .or_insert_with(Vec::new)
+                            .push(name.to_string());
+                    }
+                }
+            }
+        }
+
+        revwalk.set_sorting(git2::Sort::TOPOLOGICAL | git2::Sort::TIME)?;
 
         for oid in revwalk.take(limit) {
             let oid = oid?;
@@ -54,8 +79,11 @@ impl GitRepo {
             let parent_ids: Vec<String> =
                 commit.parent_ids().map(|id| format!("{:.7}", id)).collect();
 
+            let oid_str = format!("{:.7}", oid);
+            let branches = commit_branches.get(&oid_str).cloned().unwrap_or_default();
+
             commits.push(CommitInfo {
-                id: format!("{:.7}", oid),
+                id: oid_str,
                 author: author.name().unwrap_or("Unknown").to_string(),
                 date,
                 message: commit
@@ -67,6 +95,7 @@ impl GitRepo {
                     .to_string(),
                 parent_ids,
                 graph_info: None,
+                branches,
             });
         }
 

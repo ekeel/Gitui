@@ -59,6 +59,19 @@ pub fn render_history(f: &mut Frame, app: &App, area: Rect) {
                 format!("{} ", commit.id),
                 Style::default().fg(Color::Yellow),
             ));
+
+            // Add branch labels
+            if !commit.branches.is_empty() {
+                for branch_name in &commit.branches {
+                    spans.push(Span::styled(
+                        format!("({}) ", branch_name),
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+                }
+            }
+
             spans.push(Span::raw(format!("{} ", commit.date)));
             spans.push(Span::styled(
                 commit.author.clone(),

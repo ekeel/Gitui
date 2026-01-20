@@ -44,6 +44,7 @@ pub struct CommitInfo {
     pub message: String,
     pub parent_ids: Vec<String>,
     pub graph_info: Option<GraphInfo>,
+    pub branches: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
