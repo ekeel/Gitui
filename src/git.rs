@@ -200,7 +200,7 @@ impl GitRepo {
         let mut opts = StatusOptions::new();
         opts.include_untracked(true);
         let statuses = self.repo.statuses(Some(&mut opts))?;
-        
+
         let mut is_untracked = false;
         for entry in statuses.iter() {
             if let Some(entry_path) = entry.path() {
@@ -210,10 +210,13 @@ impl GitRepo {
                 }
             }
         }
-        
+
         if is_untracked {
             // Delete the untracked file from filesystem
-            let workdir = self.repo.workdir().ok_or_else(|| anyhow::anyhow!("No working directory"))?;
+            let workdir = self
+                .repo
+                .workdir()
+                .ok_or_else(|| anyhow::anyhow!("No working directory"))?;
             let file_path = workdir.join(path);
             std::fs::remove_file(&file_path)?;
         } else {
@@ -233,11 +236,14 @@ impl GitRepo {
 
     pub fn discard_all(&self) -> Result<()> {
         // First, remove all untracked files
-        let workdir = self.repo.workdir().ok_or_else(|| anyhow::anyhow!("No working directory"))?;
+        let workdir = self
+            .repo
+            .workdir()
+            .ok_or_else(|| anyhow::anyhow!("No working directory"))?;
         let mut opts = StatusOptions::new();
         opts.include_untracked(true);
         let statuses = self.repo.statuses(Some(&mut opts))?;
-        
+
         for entry in statuses.iter() {
             if let Some(path) = entry.path() {
                 if entry.status().contains(Status::WT_NEW) {
@@ -246,7 +252,7 @@ impl GitRepo {
                 }
             }
         }
-        
+
         // Then checkout all tracked files from HEAD to discard changes
         let head = self.repo.head()?;
         let tree = head.peel_to_tree()?;
