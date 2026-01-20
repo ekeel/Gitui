@@ -237,16 +237,38 @@ impl GitRepo {
     pub fn pull(&self) -> Result<()> {
         // Simplified pull - fetch and fast-forward merge
         let mut remote = self.repo.find_remote("origin")?;
-        
+
         // Set up authentication callbacks
         let mut callbacks = git2::RemoteCallbacks::new();
-        callbacks.credentials(|_url, username_from_url, _allowed_types| {
-            git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        callbacks.credentials(|_url, username_from_url, allowed_types| {
+            // Try SSH key from agent first
+            if allowed_types.contains(git2::CredentialType::SSH_KEY) {
+                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+                {
+                    return Ok(cred);
+                }
+            }
+
+            // Try credential helper (for HTTPS)
+            if allowed_types.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
+                if let Ok(cred) =
+                    git2::Cred::credential_helper(&self.repo.config()?, _url, username_from_url)
+                {
+                    return Ok(cred);
+                }
+            }
+
+            // Try default credentials
+            if allowed_types.contains(git2::CredentialType::DEFAULT) {
+                return git2::Cred::default();
+            }
+
+            Err(git2::Error::from_str("No valid credentials found"))
         });
 
         let mut fetch_options = git2::FetchOptions::new();
         fetch_options.remote_callbacks(callbacks);
-        
+
         remote.fetch(&["HEAD"], Some(&mut fetch_options), None)?;
 
         let fetch_head = self.repo.find_reference("FETCH_HEAD")?;
@@ -270,16 +292,38 @@ impl GitRepo {
         let mut remote = self.repo.find_remote("origin")?;
         let branch = self.get_current_branch()?;
         let refspec = format!("refs/heads/{}", branch);
-        
+
         // Set up authentication callbacks
         let mut callbacks = git2::RemoteCallbacks::new();
-        callbacks.credentials(|_url, username_from_url, _allowed_types| {
-            git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        callbacks.credentials(|_url, username_from_url, allowed_types| {
+            // Try SSH key from agent first
+            if allowed_types.contains(git2::CredentialType::SSH_KEY) {
+                if let Ok(cred) = git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+                {
+                    return Ok(cred);
+                }
+            }
+
+            // Try credential helper (for HTTPS)
+            if allowed_types.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
+                if let Ok(cred) =
+                    git2::Cred::credential_helper(&self.repo.config()?, _url, username_from_url)
+                {
+                    return Ok(cred);
+                }
+            }
+
+            // Try default credentials
+            if allowed_types.contains(git2::CredentialType::DEFAULT) {
+                return git2::Cred::default();
+            }
+
+            Err(git2::Error::from_str("No valid credentials found"))
         });
 
         let mut push_options = git2::PushOptions::new();
         push_options.remote_callbacks(callbacks);
-        
+
         remote.push(&[&refspec], Some(&mut push_options))?;
         Ok(())
     }
