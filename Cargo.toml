@@ -1,11 +1,18 @@
-[package]
-name = "gitui"
-version = "0.1.0"
-edition = "2021"
-
 [dependencies]
 ratatui = "0.28"
 crossterm = "0.28"
 git2 = "0.19"
 anyhow = "1.0"
 chrono = "0.4"
+
+[package]
+name = "gituie"
+version = "0.1.0"
+edition = "2021"
+authors = ["Eric Keeling <eric@ekeel.net>"]
+license = "MIT"
+description = "A Git TUI written in Rust"
+repository = "https://github.com/ekeel/Gitui"
+readme = "README.md"
+keywords = ["git", "tui", "terminal"]
+categories = ["command-line-utilities"]
