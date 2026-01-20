@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
 use crate::app::{App, View};
 use crate::git::GitRepo;
@@ -101,7 +102,7 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
                 }
                 KeyCode::Down | KeyCode::Char('j') => {
                     if !app.branches_state.branches.is_empty() {
-                        app.branch_creation.base_branch_selected = 
+                        app.branch_creation.base_branch_selected =
                             (app.branch_creation.base_branch_selected + 1)
                                 .min(app.branches_state.branches.len() - 1);
                     }
@@ -121,14 +122,21 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
                 }
                 KeyCode::Enter => {
                     if !app.branch_creation.new_branch_name.trim().is_empty() {
-                        let base_branch = &app.branches_state.branches
+                        let base_branch = &app
+                            .branches_state
+                            .branches
                             .get(app.branch_creation.base_branch_selected)
                             .map(|b| b.name.clone())
                             .unwrap_or_else(|| app.branches_state.current_branch.clone());
-                        
-                        match git_repo.create_branch(&app.branch_creation.new_branch_name, base_branch) {
+
+                        match git_repo
+                            .create_branch(&app.branch_creation.new_branch_name, base_branch)
+                        {
                             Ok(_) => {
-                                app.set_status(format!("Created branch: {}", app.branch_creation.new_branch_name));
+                                app.set_status(format!(
+                                    "Created branch: {}",
+                                    app.branch_creation.new_branch_name
+                                ));
                                 app.branch_creation.new_branch_name.clear();
                                 app.show_branch_dialog = false;
                                 refresh_branches(app, git_repo)?;
@@ -232,17 +240,25 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
             app.commit_message.clear();
         }
         KeyCode::Char('P') => {
-            // Push
+            // Push - temporarily restore terminal for credential prompts
             app.set_status("Pushing...".to_string());
-            match git_repo.push() {
+            let _ = disable_raw_mode();
+            let result = git_repo.push();
+            let _ = enable_raw_mode();
+            
+            match result {
                 Ok(_) => app.set_status("Pushed successfully".to_string()),
                 Err(e) => app.set_status(format!("Push failed: {}", e)),
             }
         }
         KeyCode::Char('p') => {
-            // Pull
+            // Pull - temporarily restore terminal for credential prompts
             app.set_status("Pulling...".to_string());
-            match git_repo.pull() {
+            let _ = disable_raw_mode();
+            let result = git_repo.pull();
+            let _ = enable_raw_mode();
+            
+            match result {
                 Ok(_) => {
                     app.set_status("Pulled successfully".to_string());
                     refresh_current_view(app, git_repo)?;
@@ -251,9 +267,13 @@ fn handle_files_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Result
             }
         }
         KeyCode::Char('S') => {
-            // Sync (pull + push)
+            // Sync (pull + push) - temporarily restore terminal
             app.set_status("Syncing...".to_string());
-            match git_repo.sync() {
+            let _ = disable_raw_mode();
+            let result = git_repo.sync();
+            let _ = enable_raw_mode();
+            
+            match result {
                 Ok(_) => {
                     app.set_status("Synced successfully".to_string());
                     refresh_current_view(app, git_repo)?;
@@ -278,7 +298,12 @@ fn handle_branches_keys(app: &mut App, key: KeyEvent, git_repo: &GitRepo) -> Res
             app.branch_creation.new_branch_name.clear();
             app.branch_creation.selecting_base = false;
             // Set default base to current branch index
-            if let Some(pos) = app.branches_state.branches.iter().position(|b| b.is_current) {
+            if let Some(pos) = app
+                .branches_state
+                .branches
+                .iter()
+                .position(|b| b.is_current)
+            {
                 app.branch_creation.base_branch_selected = pos;
             }
         }

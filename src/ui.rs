@@ -15,9 +15,9 @@ pub fn render_ui(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(0),     // Main content
-            Constraint::Length(3),  // Footer
+            Constraint::Length(3), // Header
+            Constraint::Min(0),    // Main content
+            Constraint::Length(3), // Footer
         ])
         .split(f.area());
 
@@ -47,7 +47,12 @@ pub fn render_ui(f: &mut Frame, app: &App) {
 
 fn render_header(f: &mut Frame, app: &App, area: Rect) {
     let title = vec![
-        Span::styled("GitUI", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "GitUI",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::raw(" | "),
         Span::styled(
             format!("Branch: {}", app.branches_state.current_branch),
@@ -93,7 +98,9 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
             0,
             Line::from(Span::styled(
                 status,
-                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
             )),
         );
     }
@@ -149,10 +156,7 @@ fn render_branch_dialog(f: &mut Frame, app: &App) {
                 };
 
                 let prefix = if branch.is_current { "* " } else { "  " };
-                let content = Line::from(vec![
-                    Span::raw(prefix),
-                    Span::raw(&branch.name),
-                ]);
+                let content = Line::from(vec![Span::raw(prefix), Span::raw(&branch.name)]);
 
                 ratatui::widgets::ListItem::new(content).style(style)
             })
@@ -195,7 +199,9 @@ fn render_branch_dialog(f: &mut Frame, app: &App) {
 
 fn get_view_style(app: &App, view: View) -> Style {
     if app.current_view == view {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::Gray)
     }
