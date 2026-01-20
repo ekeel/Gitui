@@ -1,5 +1,5 @@
-use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use anyhow::Result;
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 
 use crate::app::{App, View};
 use crate::git::GitRepo;
@@ -240,7 +240,10 @@ fn update_file_diff(app: &mut App, git_repo: &GitRepo) -> Result<()> {
 fn refresh_files(app: &mut App, git_repo: &GitRepo) -> Result<()> {
     app.files_state.files = git_repo.get_status()?;
     if !app.files_state.files.is_empty() {
-        app.files_state.selected = app.files_state.selected.min(app.files_state.files.len() - 1);
+        app.files_state.selected = app
+            .files_state
+            .selected
+            .min(app.files_state.files.len() - 1);
         update_file_diff(app, git_repo)?;
     } else {
         app.files_state.current_diff = None;
@@ -251,7 +254,10 @@ fn refresh_files(app: &mut App, git_repo: &GitRepo) -> Result<()> {
 fn refresh_history(app: &mut App, git_repo: &GitRepo) -> Result<()> {
     app.history_state.commits = git_repo.get_commits(100)?;
     if !app.history_state.commits.is_empty() {
-        app.history_state.selected = app.history_state.selected.min(app.history_state.commits.len() - 1);
+        app.history_state.selected = app
+            .history_state
+            .selected
+            .min(app.history_state.commits.len() - 1);
     }
     Ok(())
 }
@@ -260,7 +266,10 @@ fn refresh_branches(app: &mut App, git_repo: &GitRepo) -> Result<()> {
     app.branches_state.branches = git_repo.get_branches()?;
     app.branches_state.current_branch = git_repo.get_current_branch()?;
     if !app.branches_state.branches.is_empty() {
-        app.branches_state.selected = app.branches_state.selected.min(app.branches_state.branches.len() - 1);
+        app.branches_state.selected = app
+            .branches_state
+            .selected
+            .min(app.branches_state.branches.len() - 1);
     }
     Ok(())
 }

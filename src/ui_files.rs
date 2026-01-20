@@ -39,7 +39,10 @@ pub fn render_files(f: &mut Frame, app: &App, area: Rect) {
             };
 
             let content = Line::from(vec![
-                Span::styled(format!("{} ", file.status), Style::default().fg(status_color)),
+                Span::styled(
+                    format!("{} ", file.status),
+                    Style::default().fg(status_color),
+                ),
                 Span::raw(&file.path),
             ]);
 
@@ -83,10 +86,7 @@ pub fn render_files(f: &mut Frame, app: &App, area: Rect) {
 
     // Apply scrolling offset
     let scroll_offset = app.files_state.diff_scroll;
-    let visible_lines: Vec<Line> = all_lines
-        .into_iter()
-        .skip(scroll_offset)
-        .collect();
+    let visible_lines: Vec<Line> = all_lines.into_iter().skip(scroll_offset).collect();
 
     let diff_paragraph = Paragraph::new(visible_lines)
         .block(
