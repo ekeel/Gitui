@@ -31,8 +31,6 @@ fn main() -> Result<()> {
     // Open git repository
     let git_repo = GitRepo::open(&repo_path)?;
     // Test comment
-    // Setup terminal
-    enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
@@ -58,6 +56,9 @@ fn main() -> Result<()> {
         restore_terminal();
         original_hook(panic);
     }));
+
+    // Setup terminal
+    enable_raw_mode()?;
 
     // Main loop
     let result = run_app(&mut terminal, &mut app, &git_repo);
